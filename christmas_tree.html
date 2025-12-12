@@ -3,8 +3,8 @@
 
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Grand Luxury Tree - Local Gallery</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Grand Luxury Tree - Interactive</title>
     <style>
         body {
             margin: 0;
@@ -22,6 +22,7 @@
             z-index: 1;
         }
 
+        /* UI Layer optimized for non-blocking */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -33,13 +34,40 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 20px;
+            justify-content: flex-start;
+            gap: 6px;
+            padding-top: 14px;
+            /* PC端默认间距：顶部停留，避免遮挡树体 */
             box-sizing: border-box;
         }
 
         .ui-hidden {
             opacity: 0;
             pointer-events: none !important;
+        }
+
+        /* Visual Hand Cursor */
+        #hand-cursor {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 50;
+            display: none;
+            /* Hidden by default */
+            transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+
+        /* Cursor state when pinching */
+        #hand-cursor.active {
+            background-color: rgba(212, 175, 55, 0.9);
+            border-color: #d4af37;
+            transform: translate(-50%, -50%) scale(0.8);
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.8);
         }
 
         /* Loader */
@@ -89,7 +117,7 @@
         /* Title */
         h1 {
             color: #fceea7;
-            font-size: 56px;
+            font-size: 50px;
             margin: 0;
             font-weight: 400;
             letter-spacing: 6px;
@@ -105,7 +133,7 @@
 
         /* Controls */
         .upload-wrapper {
-            margin-top: 20px;
+            margin-top: 4px;
             pointer-events: auto;
             text-align: center;
             transition: opacity 0.5s ease;
@@ -143,7 +171,7 @@
             display: none;
         }
 
-        /* Webcam */
+        /* Webcam Debug (Hidden) */
         #webcam-wrapper {
             position: absolute;
             bottom: 40px;
@@ -156,21 +184,24 @@
             pointer-events: none;
         }
 
-        /* Mobile tweaks: keep overlay compact and off the tree top */
+        /* Mobile Tweaks */
         @media (max-width: 768px) {
             #ui-layer {
+                /* 关键修改：贴近顶部，避免遮挡中间的树 */
                 justify-content: flex-start;
                 padding-top: max(15px, env(safe-area-inset-top));
                 gap: 5px;
             }
 
             h1 {
-                font-size: 28px;
+                font-size: 32px;
+                letter-spacing: 2px;
+                line-height: 1.1;
                 margin-bottom: 0;
             }
 
             .upload-wrapper {
-                margin-top: 6px;
+                margin-top: 5px;
             }
 
             .upload-btn {
@@ -182,6 +213,125 @@
             .hint-text {
                 font-size: 8px;
             }
+        }
+
+        /* --- Help Button & Modal Styles --- */
+        #help-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(212, 175, 55, 0.6);
+            border-radius: 50%;
+            color: #d4af37;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 100;
+            font-family: 'Times New Roman', serif;
+            backdrop-filter: blur(4px);
+            background: rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            pointer-events: auto;
+        }
+
+        #help-btn:hover {
+            background: #d4af37;
+            color: #000;
+            box-shadow: 0 0 15px rgba(212, 175, 55, 0.6);
+        }
+
+        #help-modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s ease;
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-hidden {
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        .modal-content {
+            width: 80%;
+            max-width: 400px;
+            border: 1px solid #d4af37;
+            padding: 30px;
+            text-align: center;
+            background: rgba(20, 20, 20, 0.8);
+            box-shadow: 0 0 50px rgba(212, 175, 55, 0.2);
+            border-radius: 4px;
+        }
+
+        .modal-content h2 {
+            color: #fceea7;
+            margin: 0 0 20px 0;
+            font-family: 'Cinzel', serif;
+            font-size: 24px;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 15px;
+        }
+
+        .instruction-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            text-align: left;
+            color: #ddd;
+        }
+
+        .instruction-item .icon {
+            font-size: 30px;
+            margin-right: 20px;
+            width: 40px;
+            text-align: center;
+        }
+
+        .instruction-item .text strong {
+            display: block;
+            color: #d4af37;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .instruction-item .text p {
+            margin: 0;
+            font-size: 12px;
+            color: #888;
+            line-height: 1.4;
+        }
+
+        #close-modal-btn {
+            margin-top: 10px;
+            padding: 10px 30px;
+            background: transparent;
+            border: 1px solid #d4af37;
+            color: #d4af37;
+            font-family: 'Cinzel', serif;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #close-modal-btn:hover {
+            background: #d4af37;
+            color: #000;
         }
     </style>
     <style>
@@ -200,11 +350,13 @@
 </head>
 
 <body>
+    <div id="hand-cursor"></div>
+
     <audio id="bgm" src="./ChristmasSong.mp3" preload="auto" loop playsinline style="display: none"></audio>
 
     <div id="loader">
         <div class="spinner"></div>
-        <div class="loader-text">Loading Memories...</div>
+        <div class="loader-text">Loading Holiday Magic...</div>
     </div>
 
     <div id="canvas-container"></div>
@@ -217,7 +369,44 @@
                 <input type="file" id="file-input" multiple accept="image/*" />
             </label>
             <div class="hint-text">Press 'H' to Hide Controls</div>
-            <div id="music-hint" style="font-size: 8px; color: #666; margin-top:5px;">(Tap anywhere to play music)</div>
+            <div id="music-hint" style="font-size: 8px; color: #666; margin-top:5px;">(Tap screen to play music)</div>
+        </div>
+    </div>
+
+    <div id="help-btn">?</div>
+
+    <div id="help-modal" class="modal-hidden">
+        <div class="modal-content">
+            <h2>How to Play</h2>
+            <div class="instruction-item">
+                <span class="icon">✊</span>
+                <div class="text">
+                    <strong>Fist (握拳)</strong>
+                    <p>Assemble the Tree<br>召唤圣诞树</p>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <span class="icon">🖐️</span>
+                <div class="text">
+                    <strong>Open Hand (张开手)</strong>
+                    <p>Scatter Stars<br>散开变成星空</p>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <span class="icon">👌</span>
+                <div class="text">
+                    <strong>Pinch (捏合)</strong>
+                    <p>Focus Photo<br>抓取/放大照片</p>
+                </div>
+            </div>
+            <div class="instruction-item">
+                <span class="icon">👋</span>
+                <div class="text">
+                    <strong>Move Hand (移动手)</strong>
+                    <p>Rotate Camera<br>旋转视角</p>
+                </div>
+            </div>
+            <button id="close-modal-btn">Got it</button>
         </div>
     </div>
 
@@ -234,7 +423,9 @@
         import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
         import { FilesetResolver, HandLandmarker } from "@mediapipe/tasks-vision";
 
-        // --- 默认照片列表（位于 photos 文件夹） ---
+        // --- CONFIG & STATE ---
+
+        // 请确保 photos 目录下有这些文件，或者修改为您的实际文件名
         const DEFAULT_PHOTO_PATHS = [
             "photos/1804775ae9702507ba39de01df0f96f3.jpg",
             "photos/19ab17180abbacfbbef9b1b9614b78d9.jpg",
@@ -268,6 +459,15 @@
             focusTarget: null,
             hand: { detected: false, x: 0, y: 0 },
             rotation: { x: 0, y: 0 },
+            // 新增：捏合防抖配置
+            pinch: {
+                counter: 0,      // 当前连续捏合帧数
+                threshold: 5,    // 必须保持 5 帧才触发 (防抖)
+                cooldown: 0,     // 冷却时间
+                isPinching: false,
+                downThreshold: 0.04, // 进入捏合的阈值（更严格）
+                upThreshold: 0.08    // 退出捏合的阈值（迟滞，避免抖动）
+            }
         };
 
         let scene, camera, renderer, composer;
@@ -275,9 +475,13 @@
         let particleSystem = [];
         let photoMeshGroup = new THREE.Group();
         let handLandmarker, video, webcamCanvas, webcamCtx, caneTexture;
+        let cursorEl;
+        let raycaster = new THREE.Raycaster(); // 用于精准点击
         const textureLoader = new THREE.TextureLoader();
 
         async function init() {
+            cursorEl = document.getElementById('hand-cursor');
+
             initThree();
             setupEnvironment();
             setupLights();
@@ -285,19 +489,13 @@
             createParticles();
             createDust();
 
-            // 加载默认照片逻辑
             if (DEFAULT_PHOTO_PATHS.length > 0) await loadDefaultGallery();
-            else createDefaultPhotos(); // 如果数组为空，显示默认的文字图片
+            else createDefaultPhotos();
 
             setupPostProcessing();
             setupEvents();
 
-            // 尝试初始化摄像头，但即使失败也不阻塞主程序
-            try {
-                await initMediaPipe();
-            } catch (e) {
-                console.warn("Camera init skipped or failed:", e);
-            }
+            try { await initMediaPipe(); } catch (e) { console.warn("Camera init failed:", e); }
 
             const loader = document.getElementById("loader");
             loader.style.opacity = 0;
@@ -368,6 +566,7 @@
             caneTexture.wrapS = THREE.RepeatWrapping; caneTexture.wrapT = THREE.RepeatWrapping; caneTexture.repeat.set(3, 3);
         }
 
+        // --- PARTICLE SYSTEM ---
         class Particle {
             constructor(mesh, type, isDust = false) {
                 this.mesh = mesh; this.type = type; this.isDust = isDust;
@@ -454,7 +653,6 @@
         }
 
         function createDefaultPhotos() {
-            // Fallback if no photos are loaded
             const canvas = document.createElement("canvas"); canvas.width = 512; canvas.height = 512;
             const ctx = canvas.getContext("2d"); ctx.fillStyle = "#050505"; ctx.fillRect(0, 0, 512, 512);
             ctx.strokeStyle = "#eebb66"; ctx.lineWidth = 15; ctx.strokeRect(20, 20, 472, 472);
@@ -467,15 +665,10 @@
         function addPhotoToScene(texture) {
             const img = texture.image || {};
             const aspect = img.width && img.height ? img.width / img.height : 1;
-            const maxEdge = 1.2; // limit longest edge
+            const maxEdge = 1.2;
             const photoWidth = aspect >= 1 ? maxEdge : maxEdge * aspect;
             const photoHeight = aspect >= 1 ? maxEdge / aspect : maxEdge;
-            const framePad = 0.18; // slight padding around photo
-            const frameGeo = new THREE.BoxGeometry(
-                photoWidth + framePad,
-                photoHeight + framePad,
-                0.05
-            );
+            const frameGeo = new THREE.BoxGeometry(photoWidth + 0.18, photoHeight + 0.18, 0.05);
             const frameMat = new THREE.MeshStandardMaterial({ color: CONFIG.colors.champagneGold, metalness: 1.0, roughness: 0.1 });
             const frame = new THREE.Mesh(frameGeo, frameMat);
             const photoGeo = new THREE.PlaneGeometry(photoWidth, photoHeight);
@@ -487,34 +680,18 @@
             particleSystem.push(new Particle(group, "PHOTO", false));
         }
 
-        // --- 加载本地 gallery ---
         async function loadDefaultGallery() {
-            const loadTexture = (path) =>
-                new Promise((resolve, reject) => {
-                    textureLoader.load(
-                        path,
-                        (texture) => resolve(texture),
-                        undefined,
-                        (err) => reject(err)
-                    );
-                });
-
-            const results = await Promise.allSettled(
-                DEFAULT_PHOTO_PATHS.map((p) => loadTexture(p))
-            );
-
+            const loadTexture = (path) => new Promise((resolve, reject) => {
+                textureLoader.load(path, (t) => resolve(t), undefined, (e) => reject(e));
+            });
+            const results = await Promise.allSettled(DEFAULT_PHOTO_PATHS.map((p) => loadTexture(p)));
             let successCount = 0;
             results.forEach((res, idx) => {
                 if (res.status === "fulfilled") {
-                    const texture = res.value;
-                    texture.colorSpace = THREE.SRGBColorSpace;
-                    addPhotoToScene(texture);
-                    successCount++;
-                } else {
-                    console.warn("未能加载默认图片:", DEFAULT_PHOTO_PATHS[idx]);
-                }
+                    const texture = res.value; texture.colorSpace = THREE.SRGBColorSpace;
+                    addPhotoToScene(texture); successCount++;
+                } else { console.warn("Missing photo:", DEFAULT_PHOTO_PATHS[idx]); }
             });
-
             if (successCount === 0) createDefaultPhotos();
         }
 
@@ -532,7 +709,7 @@
             });
         }
 
-        // --- MEDIAPIPE (Mobile Optimized) ---
+        // --- MEDIAPIPE LOGIC ---
         async function initMediaPipe() {
             video = document.getElementById("webcam");
             webcamCanvas = document.getElementById("webcam-preview");
@@ -549,7 +726,7 @@
                     const stream = await navigator.mediaDevices.getUserMedia(constraints);
                     video.srcObject = stream;
                     video.onloadedmetadata = () => { video.play(); predictWebcam(); };
-                } catch (err) { console.error("摄像头权限或HTTPS问题:", err); }
+                } catch (err) { console.error("Camera Error:", err); }
             }
         }
 
@@ -566,22 +743,114 @@
         }
 
         function processGestures(result) {
+            // 1. Cooldown logic
+            if (STATE.pinch.cooldown > 0) STATE.pinch.cooldown--;
+
             if (result.landmarks && result.landmarks.length > 0) {
-                STATE.hand.detected = true; const lm = result.landmarks[0];
-                STATE.hand.x = (lm[9].x - 0.5) * 2; STATE.hand.y = (lm[9].y - 0.5) * 2;
+                STATE.hand.detected = true;
+                const lm = result.landmarks[0];
+
+                // 更新手的位置 (用于光标和旋转)
+                STATE.hand.x = (lm[9].x - 0.5) * 2;
+                STATE.hand.y = (lm[9].y - 0.5) * 2;
+
+                // 更新光标位置 (将 -1..1 映射到屏幕像素)
+                updateCursor(STATE.hand.x, STATE.hand.y, true);
+
                 const thumb = lm[4]; const index = lm[8]; const wrist = lm[0];
                 const pinchDist = Math.hypot(thumb.x - index.x, thumb.y - index.y);
                 const tips = [lm[8], lm[12], lm[16], lm[20]];
                 let avgDist = 0; tips.forEach((t) => (avgDist += Math.hypot(t.x - wrist.x, t.y - wrist.y))); avgDist /= 4;
-                if (pinchDist < 0.05) {
-                    if (STATE.mode !== "FOCUS") {
-                        STATE.mode = "FOCUS";
-                        const photos = particleSystem.filter((p) => p.type === "PHOTO");
-                        if (photos.length) STATE.focusTarget = photos[Math.floor(Math.random() * photos.length)].mesh;
+
+                // --- 改进的捏合判定逻辑 (防抖 + 迟滞) ---
+                if (pinchDist < STATE.pinch.downThreshold) {
+                    STATE.pinch.counter++; // 累积捏合帧数
+                    cursorEl.classList.add('active'); // 光标变色提示
+
+                    // 只有当持续捏合超过阈值，且不在冷却期，才真正触发
+                    if (STATE.pinch.counter > STATE.pinch.threshold && STATE.pinch.cooldown <= 0) {
+                        STATE.pinch.isPinching = true;
+                        if (STATE.mode !== "FOCUS") {
+                            triggerFocusMode();
+                        }
+                        STATE.pinch.cooldown = 60; // 冷却 60 帧 (约1秒)
+                        STATE.pinch.counter = 0; // 重置计数
                     }
-                } else if (avgDist < 0.25) { STATE.mode = "TREE"; STATE.focusTarget = null; }
-                else if (avgDist > 0.4) { STATE.mode = "SCATTER"; STATE.focusTarget = null; }
-            } else { STATE.hand.detected = false; }
+                } else if (pinchDist > STATE.pinch.upThreshold) {
+                    // 松开到足够远，退出捏合状态
+                    STATE.pinch.counter = 0;
+                    STATE.pinch.isPinching = false;
+                    cursorEl.classList.remove('active');
+                }
+
+                // 其他手势
+                if (avgDist < 0.25 && STATE.pinch.counter === 0) {
+                    STATE.mode = "TREE"; STATE.focusTarget = null;
+                } else if (avgDist > 0.4 && STATE.pinch.counter === 0) {
+                    STATE.mode = "SCATTER"; STATE.focusTarget = null;
+                }
+
+            } else {
+                STATE.hand.detected = false;
+                STATE.pinch.counter = 0;
+                STATE.pinch.isPinching = false;
+                cursorEl.classList.remove('active');
+                updateCursor(0, 0, false);
+            }
+        }
+
+        function updateCursor(x, y, visible) {
+            if (!visible) {
+                cursorEl.style.display = 'none';
+                return;
+            }
+            cursorEl.style.display = 'block';
+            // x, y 都是 -1 到 1。MediaPipe 的 x 也是镜像的。
+            // 屏幕坐标映射：
+            // x: -1(右) -> 1(左)  (因为是自拍镜像) -> 实际屏幕 left: (1 - x)/2 * width
+            // y: -1(上) -> 1(下)  -> 实际屏幕 top:  (y + 1)/2 * height
+
+            // 注意：我们在 processGestures 里算的 x = (lm.x - 0.5)*2 已经是 -1(右) 到 1(左) 了
+            // 咱们反算回 0..1
+            const screenX = ((x * -1) + 1) / 2 * window.innerWidth;
+            const screenY = (y + 1) / 2 * window.innerHeight;
+
+            cursorEl.style.left = `${screenX}px`;
+            cursorEl.style.top = `${screenY}px`;
+        }
+
+        function triggerFocusMode() {
+            STATE.mode = "FOCUS";
+
+            // --- 核心优化：Raycasting 精准拾取 ---
+            // 1. 将手势坐标转换为 Three.js 的 NDC 坐标 (-1 到 1)
+            // MediaPipe Hand X: -1 (Right) to 1 (Left)
+            // ThreeJS Camera X: -1 (Left) to 1 (Right) -> 也就是 -HandX
+            // MediaPipe Hand Y: -1 (Top) to 1 (Bottom)
+            // ThreeJS Camera Y: 1 (Top) to -1 (Bottom) -> 也就是 -HandY
+
+            raycaster.setFromCamera(new THREE.Vector2(-STATE.hand.x, -STATE.hand.y), camera);
+
+            // 2. 检测射线是否击中照片组
+            const intersects = raycaster.intersectObjects(photoMeshGroup.children, true);
+
+            if (intersects.length > 0) {
+                // 找到了特定照片
+                // 我们的结构是 Group -> [Frame, PhotoMesh]
+                // 射线击中的是子 Mesh，需要向上找到它的父级 Group
+                let targetObj = intersects[0].object;
+                if (targetObj.parent && targetObj.parent.isGroup) {
+                    STATE.focusTarget = targetObj.parent;
+                    console.log("Selected specific photo!");
+                    return;
+                }
+            }
+
+            // 3. 兜底：如果没抓到任何照片，随机选一张 (防止用户产生挫败感)
+            const photos = particleSystem.filter((p) => p.type === "PHOTO");
+            if (photos.length) {
+                STATE.focusTarget = photos[Math.floor(Math.random() * photos.length)].mesh;
+            }
         }
 
         function setupEvents() {
@@ -590,18 +859,9 @@
                 renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight);
             });
             document.getElementById("file-input").addEventListener("change", handleImageUpload);
-
-            // --- 音乐播放逻辑 ---
             const bgm = document.getElementById("bgm");
             const musicHint = document.getElementById("music-hint");
-            const tryPlay = () =>
-                bgm
-                    .play()
-                    .then(() => {
-                        if (musicHint) musicHint.style.display = "none";
-                    })
-                    .catch(() => { });
-
+            const tryPlay = () => bgm.play().then(() => { if (musicHint) musicHint.style.display = "none"; }).catch(() => { });
             tryPlay();
             window.addEventListener("click", tryPlay, { once: true });
             window.addEventListener("touchstart", tryPlay, { once: true });
@@ -609,6 +869,27 @@
                 if (e.key.toLowerCase() === "h") {
                     const controls = document.querySelector(".upload-wrapper");
                     if (controls) controls.classList.toggle("ui-hidden");
+                }
+            });
+
+            // --- 帮助弹窗逻辑 ---
+            const helpBtn = document.getElementById('help-btn');
+            const helpModal = document.getElementById('help-modal');
+            const closeBtn = document.getElementById('close-modal-btn');
+
+            helpBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                helpModal.classList.remove('modal-hidden');
+            });
+
+            closeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                helpModal.classList.add('modal-hidden');
+            });
+
+            helpModal.addEventListener('click', (e) => {
+                if (e.target === helpModal) {
+                    helpModal.classList.add('modal-hidden');
                 }
             });
         }
